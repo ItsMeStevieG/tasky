@@ -1,0 +1,21 @@
+{
+    "name": "itsmestevieg/tasky",
+    "description": "A timesheet tracking application",
+    "type": "project",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Itsmestevieg\\Tasky\\": "app/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Steven Graham",
+            "email": "steg2005@gmail.com"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {
+        "twig/twig": "^3.20"
+    }
+}

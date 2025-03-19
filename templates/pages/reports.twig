@@ -1,0 +1,59 @@
+{% extends 'base.twig' %}
+
+{% block title %}Reports - Tasky{% endblock %}
+
+{% block content %}
+<div class="card mb-4">
+    <div class="card-header">Filter Hours by Project</div>
+    <div class="card-body">
+        <form method="GET" action="index.php">
+            <input type="hidden" name="csrf_token" value="{{ auth.getCsrfToken() }}">
+            <input type="hidden" name="nav" value="reports">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label for="start_date" class="form-label">Start Date</label>
+                    <input type="date" class="form-control" id="start_date" name="start_date" value="{{ start_date }}" required>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label for="end_date" class="form-label">End Date</label>
+                    <input type="date" class="form-control" id="end_date" name="end_date" value="{{ end_date }}" required>
+                </div>
+                <div class="col-md-4 mb-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Generate Report</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        Hours by Project
+        <form method="POST" action="index.php?nav=reports" class="d-inline float-end">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="start_date" value="{{ start_date }}">
+            <input type="hidden" name="end_date" value="{{ end_date }}">
+            <input type="hidden" name="export_csv" value="1">
+            <button type="submit" class="btn btn-secondary btn-sm">Export to CSV</button>
+        </form>
+    </div>
+    <div class="card-body">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Project</th>
+                    <th>Total Hours</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for report in reports %}
+                <tr>
+                    <td>{{ report.project_name|default('No Project') }}</td>
+                    <td>{{ report.total_hours|number_format(2) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

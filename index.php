@@ -32,11 +32,13 @@ use Itsmestevieg\Tasky\Timesheet;
 use Itsmestevieg\Tasky\Report;
 use Itsmestevieg\Tasky\User;
 
+// Initialize Twig
 $loader = new \Twig\Loader\FilesystemLoader('templates');
 $twig = new \Twig\Environment($loader, [
     'cache' => 'templates/cache', // Enable caching
-    'auto_reload' => true,   // Recompile templates if they change
+    'auto_reload' => true,        // Recompile templates if they change
 ]);
+
 $auth = new Auth($pdo);
 $twig->addGlobal('auth', $auth);
 $project = new Project($pdo);
@@ -47,6 +49,29 @@ $user = new User($pdo);
 $nav = $_GET['nav'] ?? 'dashboard';
 $error = null;
 $success = null;
+
+// Set the initial theme from session, default to system preference if not set
+if (!isset($_SESSION['theme'])) {
+    $_SESSION['theme'] = 'system'; // Default to system preference
+}
+
+// Determine the theme to apply server-side
+$theme = $_SESSION['theme'];
+if ($theme === 'system') {
+    // Default to light if we can't determine system preference server-side
+    $theme = 'light';
+}
+$twig->addGlobal('theme', $theme);
+
+// Handle theme toggle as a separate nav value
+if ($nav === 'toggle_theme' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $theme = $_POST['theme'] ?? 'light';
+    $_SESSION['theme'] = $theme;
+    // Return a JSON response for AJAX
+    header('Content-Type: application/json');
+    echo json_encode(['status' => 'success', 'theme' => $theme]);
+    exit;
+}
 
 if ($nav === 'login') {
     if ($auth->isLoggedIn()) {
@@ -455,6 +480,8 @@ if ($nav === 'login') {
     exit;
 } else {
     $auth->requireLogin();
+    $page = max(1, (int)($_GET['page'] ?? 1));
+    $perPage = 10;
     $projects = $project->getAll();
     $tags = $tag->getAll();
     $entries = $timesheet->getUserEntriesPaginated($_SESSION['user_id'], $page, $perPage);

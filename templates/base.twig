@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="{% if theme == 'dark' %}dark{% else %}light{% endif %}">
+<html lang="en" data-theme="{{ theme }}">
 
 <head>
     <meta charset="UTF-8">
@@ -74,24 +74,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
     {% block footscripts %}
     <script>
-        // Theme toggle logic
-        const themeToggle = document.getElementById('themeToggle');
-        const themeIcon = document.getElementById('themeIcon');
-        const html = document.documentElement;
-        let theme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-
-        // Set initial theme and icon
-        html.setAttribute('data-theme', theme);
-        themeIcon.className = theme === 'light' ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
-
-        // Toggle theme
-        themeToggle.addEventListener('click', () => {
-            theme = theme === 'light' ? 'dark' : 'light';
-            html.setAttribute('data-theme', theme);
-            localStorage.setItem('theme', theme);
-            themeIcon.className = theme === 'light' ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
-        });
-
         // Cropper.js logic (only on profile page)
         if (document.getElementById('profile_picture')) {
             const imageInput = document.getElementById('profile_picture');

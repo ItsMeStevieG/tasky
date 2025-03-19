@@ -208,4 +208,109 @@
         max-width: 100%;
         max-height: 400px;
     }
+
+    /* Mobile-responsive card-style layout for tables */
+    @media (max-width: 768px) {
+        .table-responsive {
+            border: none;
+        }
+
+        .table {
+            margin-bottom: 0;
+        }
+
+        .table thead {
+            display: none;
+        }
+
+        .table tbody tr {
+            display: block;
+            margin-bottom: 1rem;
+            border: 1px solid var(--input-border);
+            border-radius: 8px;
+            background-color: var(--card-bg);
+            box-shadow: 0 2px 4px var(--shadow);
+        }
+
+        .table tbody tr:last-child {
+            margin-bottom: 0;
+        }
+
+        .table tbody td {
+            display: block;
+            text-align: left;
+            padding: 0.5rem 1rem;
+            border: none;
+        }
+
+        .table tbody td:before {
+            content: attr(data-label) ": ";
+            font-weight: bold;
+            display: inline-block;
+            width: 40%;
+            vertical-align: top;
+        }
+
+        .table tbody td:last-child {
+            border-bottom: none;
+        }
+
+        /* Specific adjustments for actions column */
+        .table tbody td.actions {
+            display: flex;
+            justify-content: flex-start;
+            gap: 0.5rem;
+            padding-top: 0.25rem;
+            padding-bottom: 0.75rem;
+        }
+
+        .table tbody td.actions:before {
+            content: none;
+        }
+    }
 </style>
+
+<script>
+    // Theme toggle logic
+    document.addEventListener('DOMContentLoaded', () => {
+        const themeToggle = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        const html = document.documentElement;
+        let theme = '{{ theme }}'; // Initial theme from server
+
+        // If the theme is set to 'system', detect the system preference
+        if (theme === 'system') {
+            theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            // Update the session with the detected theme
+            fetch('index.php?nav=toggle_theme', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'theme=' + theme
+            });
+        }
+
+        // Set initial theme and icon
+        html.setAttribute('data-theme', theme);
+        themeIcon.className = theme === 'light' ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
+
+        // Toggle theme on click
+        themeToggle.addEventListener('click', () => {
+            const newTheme = theme === 'light' ? 'dark' : 'light';
+            html.setAttribute('data-theme', newTheme);
+            theme = newTheme;
+            localStorage.setItem('theme', newTheme);
+            themeIcon.className = newTheme === 'light' ? 'bi bi-sun-fill' : 'bi bi-moon-fill';
+
+            // Update the session with the new theme
+            fetch('index.php?nav=toggle_theme', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'theme=' + newTheme
+            });
+        });
+    });
+</script>

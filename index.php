@@ -34,7 +34,7 @@ use Itsmestevieg\Tasky\User;
 
 $loader = new \Twig\Loader\FilesystemLoader('templates');
 $twig = new \Twig\Environment($loader, [
-    'cache' => 'cache/twig', // Enable caching
+    'cache' => 'templates/cache', // Enable caching
     'auto_reload' => true,   // Recompile templates if they change
 ]);
 $auth = new Auth($pdo);

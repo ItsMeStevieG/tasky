@@ -1,6 +1,6 @@
 # Tasky - Timesheet Tracker
 
-![Tasky Logo](assets/img/favicon-32x32.png)
+![Tasky Logo](assets/img/android-chrome-192x192.png)
 
 **Tasky** is a web-based timesheet tracking application built with PHP, MySQL, and Bootstrap 5.3.3, inspired by tools like Clockify. It allows users to track work hours, manage projects, tags, and users, update their profiles, and generate reports, with support for light and dark themes.
 

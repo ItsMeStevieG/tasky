@@ -1,0 +1,33 @@
+{% extends 'base.twig' %}
+
+{% block title %}Edit User - Tasky{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">Edit User</div>
+    <div class="card-body">
+        <form method="POST" action="index.php?nav=edit_user&id={{ user.id }}">
+            <input type="hidden" name="csrf_token" value="{{ auth.getCsrfToken() }}">
+            <input type="hidden" name="action" value="update_user">
+            <div class="mb-3">
+                <label for="username" class="form-label">Username</label>
+                <input type="text" class="form-control" id="username" name="username" value="{{ user.username }}" required>
+            </div>
+            <div class="mb-3">
+                <label for="password" class="form-label">New Password (leave blank to keep current)</label>
+                <input type="password" class="form-control" id="password" name="password">
+            </div>
+            <div class="mb-3">
+                <label for="full_name" class="form-label">Full Name</label>
+                <input type="text" class="form-control" id="full_name" name="full_name" value="{{ user.full_name }}" required>
+            </div>
+            <div class="mb-3 form-check">
+                <input type="checkbox" class="form-check-input" id="is_admin" name="is_admin" {% if user.is_admin %}checked{% endif %}>
+                <label class="form-check-label" for="is_admin">Is Admin</label>
+            </div>
+            <button type="submit" class="btn btn-primary">Update User</button>
+            <a href="index.php?nav=users" class="btn btn-secondary">Cancel</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

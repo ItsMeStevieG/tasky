@@ -36,6 +36,8 @@ class Auth
         if ($user && password_verify($password, $user['password'])) {
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['full_name'] = $user['full_name'];
+            $_SESSION['is_admin'] = $user['is_admin'];
+            $_SESSION['profile_picture'] = $user['profile_picture'];
             return true;
         }
         return false;
@@ -66,8 +68,51 @@ class Auth
         }
     }
 
+    public function isAdmin()
+    {
+        return $this->isLoggedIn() && isset($_SESSION['is_admin']) && $_SESSION['is_admin'];
+    }
+
+    public function requireAdmin()
+    {
+        if (!$this->isAdmin()) {
+            header("Location: index.php?nav=dashboard");
+            exit;
+        }
+    }
+
     public function getFullName()
     {
         return $_SESSION['full_name'] ?? '';
+    }
+
+    public function getProfilePicture()
+    {
+        return $_SESSION['profile_picture'] ?? null;
+    }
+
+    public function updateProfile($user_id, $full_name, $password = null, $profile_picture = null)
+    {
+        $params = ['full_name' => $full_name, 'user_id' => $user_id];
+        $sql = "UPDATE users SET full_name = :full_name";
+
+        if ($password) {
+            $params['password'] = password_hash($password, PASSWORD_BCRYPT);
+            $sql .= ", password = :password";
+        }
+        if ($profile_picture) {
+            $params['profile_picture'] = $profile_picture;
+            $sql .= ", profile_picture = :profile_picture";
+        }
+
+        $sql .= " WHERE id = :user_id";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute($params);
+
+        // Update session
+        $_SESSION['full_name'] = $full_name;
+        if ($profile_picture) {
+            $_SESSION['profile_picture'] = $profile_picture;
+        }
     }
 }

@@ -11,7 +11,6 @@ set_error_handler(function ($severity, $message, $file, $line) {
         $line
     );
     file_put_contents($log_file, $log_message, FILE_APPEND);
-    // Return false to let PHP's default handler run (e.g., for display)
     return false;
 });
 
@@ -25,12 +24,14 @@ require_once 'app/Project.php';
 require_once 'app/Tag.php';
 require_once 'app/Timesheet.php';
 require_once 'app/Report.php';
+require_once 'app/User.php';
 
 use Itsmestevieg\Tasky\Auth;
 use Itsmestevieg\Tasky\Project;
 use Itsmestevieg\Tasky\Tag;
 use Itsmestevieg\Tasky\Timesheet;
 use Itsmestevieg\Tasky\Report;
+use Itsmestevieg\Tasky\User;
 
 $loader = new \Twig\Loader\FilesystemLoader('templates');
 $twig = new \Twig\Environment($loader);
@@ -40,6 +41,7 @@ $project = new Project($pdo);
 $tag = new Tag($pdo);
 $timesheet = new Timesheet($pdo);
 $report = new Report($pdo);
+$user = new User($pdo);
 $nav = $_GET['nav'] ?? 'dashboard';
 $error = null;
 
@@ -229,6 +231,130 @@ if ($nav === 'login') {
         'reports' => $reports,
         'start_date' => $start_date,
         'end_date' => $end_date,
+        'error' => $error
+    ]);
+} elseif ($nav === 'users') {
+    $auth->requireAdmin();
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && $_POST['action'] === 'add_user') {
+        $csrf_token = $_POST['csrf_token'] ?? '';
+        if (!$auth->verifyCsrfToken($csrf_token)) {
+            $error = "Invalid CSRF token.";
+        } else {
+            $username = trim($_POST['username'] ?? '');
+            $password = $_POST['password'] ?? '';
+            $full_name = trim($_POST['full_name'] ?? '');
+            $is_admin = isset($_POST['is_admin']);
+            if (empty($username) || empty($password) || empty($full_name)) {
+                $error = "Username, password, and full name are required.";
+            } else {
+                try {
+                    $user->add($username, $password, $full_name, $is_admin);
+                } catch (\PDOException $e) {
+                    $error = "Error adding user: " . $e->getMessage();
+                }
+            }
+        }
+    }
+    $users = $user->getAll();
+    echo $twig->render('pages/users.twig', [
+        'full_name' => $auth->getFullName(),
+        'users' => $users,
+        'error' => $error
+    ]);
+} elseif ($nav === 'edit_user') {
+    $auth->requireAdmin();
+    $id = $_GET['id'] ?? null;
+    if (!$id || !($user_data = $user->getById($id))) {
+        header("Location: index.php?nav=users");
+        exit;
+    }
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && $_POST['action'] === 'update_user') {
+        $csrf_token = $_POST['csrf_token'] ?? '';
+        if (!$auth->verifyCsrfToken($csrf_token)) {
+            $error = "Invalid CSRF token.";
+        } else {
+            $username = trim($_POST['username'] ?? '');
+            $password = $_POST['password'] ?? '';
+            $full_name = trim($_POST['full_name'] ?? '');
+            $is_admin = isset($_POST['is_admin']);
+            if (empty($username) || empty($full_name)) {
+                $error = "Username and full name are required.";
+            } else {
+                try {
+                    $user->update($id, $username, $full_name, $is_admin, $password ?: null);
+                    header("Location: index.php?nav=users");
+                    exit;
+                } catch (\PDOException $e) {
+                    $error = "Error updating user: " . $e->getMessage();
+                }
+            }
+        }
+    }
+    echo $twig->render('pages/edit_user.twig', [
+        'full_name' => $auth->getFullName(),
+        'user' => $user_data,
+        'error' => $error
+    ]);
+} elseif ($nav === 'delete_user') {
+    $auth->requireAdmin();
+    $id = $_GET['id'] ?? null;
+    if ($id && $id != $_SESSION['user_id']) { // Prevent self-deletion
+        $user->delete($id);
+    }
+    header("Location: index.php?nav=users");
+    exit;
+} elseif ($nav === 'profile') {
+    $auth->requireLogin();
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && $_POST['action'] === 'update_profile') {
+        $csrf_token = $_POST['csrf_token'] ?? '';
+        if (!$auth->verifyCsrfToken($csrf_token)) {
+            $error = "Invalid CSRF token.";
+        } else {
+            $full_name = trim($_POST['full_name'] ?? '');
+            $password = $_POST['password'] ?? '';
+            $profile_picture = null;
+
+            if (empty($full_name)) {
+                $error = "Full name is required.";
+            } else {
+                // Handle profile picture upload
+                if (!empty($_POST['cropped_image'])) {
+                    $upload_dir = 'uploads/';
+                    if (!is_dir($upload_dir)) {
+                        mkdir($upload_dir, 0777, true);
+                    }
+                    $base64_image = $_POST['cropped_image'];
+                    $image_data = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $base64_image));
+                    $filename = uniqid() . '.jpg';
+                    $upload_path = $upload_dir . $filename;
+                    if (file_put_contents($upload_path, $image_data)) {
+                        $profile_picture = $upload_path;
+                    } else {
+                        $error = "Failed to save cropped profile picture.";
+                    }
+                } elseif (!empty($_FILES['profile_picture']['name'])) {
+                    $upload_dir = 'uploads/';
+                    if (!is_dir($upload_dir)) {
+                        mkdir($upload_dir, 0777, true);
+                    }
+                    $ext = pathinfo($_FILES['profile_picture']['name'], PATHINFO_EXTENSION);
+                    $filename = uniqid() . '.' . $ext;
+                    $upload_path = $upload_dir . $filename;
+                    if (move_uploaded_file($_FILES['profile_picture']['tmp_name'], $upload_path)) {
+                        $profile_picture = $upload_path;
+                    } else {
+                        $error = "Failed to upload profile picture.";
+                    }
+                }
+
+                if (!$error) {
+                    $auth->updateProfile($_SESSION['user_id'], $full_name, $password ?: null, $profile_picture);
+                }
+            }
+        }
+    }
+    echo $twig->render('pages/profile.twig', [
+        'full_name' => $auth->getFullName(),
         'error' => $error
     ]);
 } elseif ($nav === 'logout') {

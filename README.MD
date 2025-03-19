@@ -56,8 +56,8 @@
 
 - **PHP 7.4+** with PDO MySQL extension
 - **MySQL 5.7+**
-- **Web Server** (e.g., Apache via XAMPP, WAMP, or MAMP)
-- **Composer** (PHP dependency manager)
+- **Web Server** (e.g., Apache via <a href="https://www.apachefriends.org/index.html" target="_blank">XAMPP</a>, <a href="https://www.wampserver.com/en/" target="_blank">WAMP</a>, or <a href="https://www.mamp.info/en/" target="_blank">MAMP</a>)
+- **Composer** (PHP dependency manager) <a href="https://getcomposer.org/download/" target="_blank">Download</a>
 
 ### Steps
 

@@ -18,6 +18,22 @@ class Tag
         return $this->pdo->lastInsertId();
     }
 
+    public function getPaginated($page = 1, $perPage = 10)
+    {
+        $offset = ($page - 1) * $perPage;
+        $stmt = $this->pdo->prepare("SELECT * FROM tags ORDER BY name LIMIT :limit OFFSET :offset");
+        $stmt->bindValue(':limit', $perPage, \PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, \PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    public function getTotalCount()
+    {
+        $stmt = $this->pdo->query("SELECT COUNT(*) FROM tags");
+        return $stmt->fetchColumn();
+    }
+
     public function getAll()
     {
         $stmt = $this->pdo->query("SELECT * FROM tags ORDER BY name");

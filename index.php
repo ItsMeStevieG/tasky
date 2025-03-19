@@ -15,7 +15,6 @@ set_error_handler(function ($severity, $message, $file, $line) {
 });
 
 session_start();
-session_regenerate_id(true);
 
 require_once 'vendor/autoload.php';
 require_once 'config.php';
@@ -34,7 +33,10 @@ use Itsmestevieg\Tasky\Report;
 use Itsmestevieg\Tasky\User;
 
 $loader = new \Twig\Loader\FilesystemLoader('templates');
-$twig = new \Twig\Environment($loader);
+$twig = new \Twig\Environment($loader, [
+    'cache' => 'cache/twig', // Enable caching
+    'auto_reload' => true,   // Recompile templates if they change
+]);
 $auth = new Auth($pdo);
 $twig->addGlobal('auth', $auth);
 $project = new Project($pdo);
@@ -44,6 +46,7 @@ $report = new Report($pdo);
 $user = new User($pdo);
 $nav = $_GET['nav'] ?? 'dashboard';
 $error = null;
+$success = null;
 
 if ($nav === 'login') {
     if ($auth->isLoggedIn()) {
@@ -60,6 +63,7 @@ if ($nav === 'login') {
             if (empty($username) || empty($password)) {
                 $error = "Username and password are required.";
             } elseif ($auth->login($username, $password)) {
+                session_regenerate_id(true); // Regenerate session ID after login
                 header("Location: index.php?nav=dashboard");
                 exit;
             } else {
@@ -70,6 +74,8 @@ if ($nav === 'login') {
     echo $twig->render('pages/login.twig', ['error' => $error]);
 } elseif ($nav === 'dashboard') {
     $auth->requireLogin();
+    $page = max(1, (int)($_GET['page'] ?? 1));
+    $perPage = 10;
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && $_POST['action'] === 'add_entry') {
         $csrf_token = $_POST['csrf_token'] ?? '';
         if (!$auth->verifyCsrfToken($csrf_token)) {
@@ -95,61 +101,119 @@ if ($nav === 'login') {
                     $description,
                     $is_billable
                 );
+                $success = "Entry added successfully.";
             }
         }
     }
     $projects = $project->getAll();
     $tags = $tag->getAll();
-    $entries = $timesheet->getUserEntries($_SESSION['user_id']);
+    $entries = $timesheet->getUserEntriesPaginated($_SESSION['user_id'], $page, $perPage);
+    $totalEntries = $timesheet->getUserEntriesCount($_SESSION['user_id']);
+    $totalPages = max(1, ceil($totalEntries / $perPage));
     echo $twig->render('pages/dashboard.twig', [
         'full_name' => $auth->getFullName(),
         'projects' => $projects,
         'tags' => $tags,
         'entries' => $entries,
-        'error' => $error
+        'current_page' => $page,
+        'total_pages' => $totalPages,
+        'total_hours' => array_sum(array_column($entries, 'hours_worked')),
+        'error' => $error,
+        'success' => $success
     ]);
 } elseif ($nav === 'projects') {
     $auth->requireLogin();
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && $_POST['action'] === 'add_project') {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $csrf_token = $_POST['csrf_token'] ?? '';
         if (!$auth->verifyCsrfToken($csrf_token)) {
             $error = "Invalid CSRF token.";
         } else {
-            $name = trim($_POST['name'] ?? '');
-            $client = trim($_POST['client'] ?? '');
-            if (empty($name)) {
-                $error = "Project name is required.";
-            } else {
-                $project->add($name, $client);
+            if ($_POST['action'] === 'add_project') {
+                $name = trim($_POST['name'] ?? '');
+                $client = trim($_POST['client'] ?? '');
+                if (empty($name)) {
+                    $error = "Project name is required.";
+                } else {
+                    $project->add($name, $client);
+                    $success = "Project added successfully.";
+                }
+            } elseif ($_POST['action'] === 'update_project') {
+                $id = $_POST['id'] ?? null;
+                $name = trim($_POST['name'] ?? '');
+                $client = trim($_POST['client'] ?? '');
+                if (!$id || empty($name)) {
+                    $error = "Project ID and name are required.";
+                } else {
+                    $project->update($id, $name, $client);
+                    $success = "Project updated successfully.";
+                }
+            } elseif ($_POST['action'] === 'delete_project') {
+                $id = $_POST['id'] ?? null;
+                if ($id) {
+                    $project->delete($id);
+                    $success = "Project deleted successfully.";
+                } else {
+                    $error = "Project ID is required.";
+                }
             }
         }
     }
     $projects = $project->getAll();
+    $unique_clients = $project->getUniqueClients();
     echo $twig->render('pages/projects.twig', [
         'full_name' => $auth->getFullName(),
         'projects' => $projects,
-        'error' => $error
+        'unique_clients' => $unique_clients,
+        'error' => $error,
+        'success' => $success
     ]);
 } elseif ($nav === 'tags') {
     $auth->requireLogin();
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && $_POST['action'] === 'add_tag') {
+    $page = max(1, (int)($_GET['page'] ?? 1));
+    $perPage = 10;
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $csrf_token = $_POST['csrf_token'] ?? '';
         if (!$auth->verifyCsrfToken($csrf_token)) {
             $error = "Invalid CSRF token.";
         } else {
-            $name = trim($_POST['name'] ?? '');
-            if (empty($name)) {
-                $error = "Tag name is required.";
-            } else {
-                $tag->add($name);
+            if ($_POST['action'] === 'add_tag') {
+                $name = trim($_POST['name'] ?? '');
+                if (empty($name)) {
+                    $error = "Tag name is required.";
+                } else {
+                    $tag->add($name);
+                    $success = "Tag added successfully.";
+                }
+            } elseif ($_POST['action'] === 'update_tag') {
+                $id = $_POST['id'] ?? null;
+                $name = trim($_POST['name'] ?? '');
+                if (!$id || empty($name)) {
+                    $error = "Tag ID and name are required.";
+                } else {
+                    $tag->update($id, $name);
+                    $success = "Tag updated successfully.";
+                }
+            } elseif ($_POST['action'] === 'delete_tag') {
+                $id = $_POST['id'] ?? null;
+                if ($id) {
+                    $tag->delete($id);
+                    $success = "Tag deleted successfully.";
+                } else {
+                    $error = "Tag ID is required.";
+                }
             }
         }
     }
-    $tags = $tag->getAll();
+    $tags = $tag->getPaginated($page, $perPage);
+    $totalTags = $tag->getTotalCount();
+    $totalPages = max(1, ceil($totalTags / $perPage));
     echo $twig->render('pages/tags.twig', [
         'full_name' => $auth->getFullName(),
         'tags' => $tags,
-        'error' => $error
+        'current_page' => $page,
+        'total_pages' => $totalPages,
+        'error' => $error,
+        'success' => $success
     ]);
 } elseif ($nav === 'edit_entry') {
     $auth->requireLogin();
@@ -223,6 +287,34 @@ if ($nav === 'login') {
                 $start_date = $_GET['start_date'];
                 $end_date = $_GET['end_date'];
             }
+        }
+    }
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['export_csv'])) {
+        $csrf_token = $_POST['csrf_token'] ?? '';
+        if (!$auth->verifyCsrfToken($csrf_token)) {
+            $error = "Invalid CSRF token.";
+        } else {
+            $start_date = $_POST['start_date'] ?? date('Y-m-d', strtotime('-30 days'));
+            $end_date = $_POST['end_date'] ?? date('Y-m-d');
+            $reports = $report->getHoursByProject($_SESSION['user_id'], $start_date, $end_date);
+
+            // Generate CSV
+            header('Content-Type: text/csv');
+            header('Content-Disposition: attachment; filename="report-' . date('Y-m-d') . '.csv"');
+            header('Cache-Control: no-cache, no-store, must-revalidate');
+            header('Pragma: no-cache');
+            header('Expires: 0');
+
+            $output = fopen('php://output', 'w');
+            fputcsv($output, ['Project', 'Total Hours']); // CSV headers
+            foreach ($reports as $report) {
+                fputcsv($output, [
+                    $report['project_name'] ?: 'No Project',
+                    number_format($report['total_hours'], 2)
+                ]);
+            }
+            fclose($output);
+            exit;
         }
     }
     $reports = $report->getHoursByProject($_SESSION['user_id'], $start_date, $end_date);
@@ -365,12 +457,17 @@ if ($nav === 'login') {
     $auth->requireLogin();
     $projects = $project->getAll();
     $tags = $tag->getAll();
-    $entries = $timesheet->getUserEntries($_SESSION['user_id']);
+    $entries = $timesheet->getUserEntriesPaginated($_SESSION['user_id'], $page, $perPage);
+    $totalEntries = $timesheet->getUserEntriesCount($_SESSION['user_id']);
+    $totalPages = max(1, ceil($totalEntries / $perPage));
     echo $twig->render('pages/dashboard.twig', [
         'full_name' => $auth->getFullName(),
         'projects' => $projects,
         'tags' => $tags,
         'entries' => $entries,
+        'current_page' => $page,
+        'total_pages' => $totalPages,
+        'total_hours' => array_sum(array_column($entries, 'hours_worked')),
         'error' => $error
     ]);
 }

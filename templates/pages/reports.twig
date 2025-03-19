@@ -30,7 +30,7 @@
     <div class="card-header">
         Hours by Project
         <form method="POST" action="index.php?nav=reports" class="d-inline float-end">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="csrf_token" value="{{ auth.getCsrfToken() }}">
             <input type="hidden" name="start_date" value="{{ start_date }}">
             <input type="hidden" name="end_date" value="{{ end_date }}">
             <input type="hidden" name="export_csv" value="1">

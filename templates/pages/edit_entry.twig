@@ -3,19 +3,18 @@
 {% block title %}Edit Entry - Tasky{% endblock %}
 
 {% block content %}
-<h1>Edit Entry</h1>
-<a href="index.php?nav=dashboard" class="btn btn-info mb-4">Back to Dashboard</a>
-
 <div class="card">
+    <div class="card-header">
+        Edit Entry
+        <a href="index.php?nav=dashboard" class="btn btn-primary float-end">Back to Dashboard</a>
+    </div>
     <div class="card-body">
         <form method="POST" action="index.php?nav=edit_entry&id={{ entry.id }}">
             <input type="hidden" name="csrf_token" value="{{ auth.getCsrfToken() }}">
             <input type="hidden" name="action" value="update_entry">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <div class="mb-3">
                 <label for="project_id" class="form-label">Project</label>
-                <select name="project_id" class="form-select" required>
-                    <option value="">Select Project</option>
+                <select class="form-select" id="project_id" name="project_id" required>
                     {% for project in projects %}
                     <option value="{{ project.id }}" {% if project.id == entry.project_id %}selected{% endif %}>{{ project.name }}</option>
                     {% endfor %}
@@ -23,7 +22,7 @@
             </div>
             <div class="mb-3">
                 <label for="tag_id" class="form-label">Tag</label>
-                <select name="tag_id" class="form-select">
+                <select class="form-select" id="tag_id" name="tag_id">
                     <option value="">Select Tag</option>
                     {% for tag in tags %}
                     <option value="{{ tag.id }}" {% if tag.id == entry.tag_id %}selected{% endif %}>{{ tag.name }}</option>
@@ -34,19 +33,19 @@
                 <label for="date" class="form-label">Date</label>
                 <input type="date" class="form-control" id="date" name="date" value="{{ entry.date }}" required>
             </div>
-            <div class="row">
-                <div class="col-md-6 mb-3">
+            <div class="row mb-3">
+                <div class="col-md-6">
                     <label for="start_time" class="form-label">Start Time</label>
-                    <input type="time" class="form-control" id="start_time" name="start_time" value="{{ entry.start_time }}" required>
+                    <input type="time" class="form-control" id="start_time" name="start_time" value="{{ entry.start_time }}" step="1" required>
                 </div>
-                <div class="col-md-6 mb-3">
+                <div class="col-md-6">
                     <label for="end_time" class="form-label">End Time</label>
-                    <input type="time" class="form-control" id="end_time" name="end_time" value="{{ entry.end_time }}" required>
+                    <input type="time" class="form-control" id="end_time" name="end_time" value="{{ entry.end_time }}" step="1" required>
                 </div>
             </div>
             <div class="mb-3">
                 <label for="description" class="form-label">Description</label>
-                <textarea class="form-control" id="description" name="description">{{ entry.description }}</textarea>
+                <input type="text" class="form-control" id="description" name="description" value="{{ entry.description|default('') }}">
             </div>
             <div class="mb-3 form-check">
                 <input type="checkbox" class="form-check-input" id="is_billable" name="is_billable" {% if entry.is_billable %}checked{% endif %}>

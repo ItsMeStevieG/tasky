@@ -1,0 +1,32 @@
+# Ignore Twig cache files
+templates/cache/*
+
+# Ignore log files
+logs/*
+
+# Keep the directories themselves (optional)
+!templates/cache/.gitkeep
+!logs/.gitkeep
+
+# Ignore vendor directory (dependencies managed by Composer)
+vendor/
+
+# Ignore Composer lock file (optional, depending on your workflow)
+# composer.lock
+
+# Ignore environment-specific files
+.env
+
+# Ignore IDE and editor files
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Ignore macOS system files
+.DS_Store
+
+# Ignore temporary files
+*.tmp
+*.bak
+*.swp

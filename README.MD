@@ -130,7 +130,7 @@
   -- Add a default admin user (password: passsword)
   INSERT INTO users (username, password, full_name, is_admin) VALUES (
       'admin',
-      '$2y$10$[your_new_hash_here]',
+      '$2y$10$uwzggjkjhx8uSrXfXTAdOOC3hPI6PZSh1EcGE3v.66ATqdEyYNhcC',
       'Admin User',
       TRUE
   );

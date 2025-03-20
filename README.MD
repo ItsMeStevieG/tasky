@@ -77,64 +77,8 @@
 
 3. **Set Up the Database:**
 
-- Create a MySQL database named `tasky_db`:
-  ```sql
-  CREATE DATABASE tasky_db;
-  ```
-- Import the schema from `database.sql` (create this file with the SQL below):
-
-  ```sql
-     USE tasky_db;
-
-  CREATE TABLE users (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      username VARCHAR(50) NOT NULL UNIQUE,
-      password VARCHAR(255) NOT NULL,
-      full_name VARCHAR(100) NOT NULL,
-      is_admin BOOLEAN DEFAULT FALSE,
-      profile_picture VARCHAR(255) DEFAULT NULL,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-  );
-
-  CREATE TABLE projects (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      name VARCHAR(100) NOT NULL,
-      client VARCHAR(100),
-      hourly_rate DECIMAL(10,2),
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-  );
-
-  CREATE TABLE tags (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      name VARCHAR(50) NOT NULL UNIQUE,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-  );
-
-  CREATE TABLE timesheet_entries (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      user_id INT NOT NULL,
-      project_id INT,
-      tag_id INT,
-      date DATE NOT NULL,
-      start_time TIME,
-      end_time TIME,
-      hours_worked DECIMAL(5,2),
-      description TEXT,
-      is_billable BOOLEAN DEFAULT FALSE,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (user_id) REFERENCES users(id),
-      FOREIGN KEY (project_id) REFERENCES projects(id),
-      FOREIGN KEY (tag_id) REFERENCES tags(id)
-  );
-
-  -- Add a default admin user (password: passsword)
-  INSERT INTO users (username, password, full_name, is_admin) VALUES (
-      'admin',
-      '$2y$10$uwzggjkjhx8uSrXfXTAdOOC3hPI6PZSh1EcGE3v.66ATqdEyYNhcC',
-      'Admin User',
-      TRUE
-  );
-  ```
+- Set up your database by importing the schema from `database.sql`.
+  - Note: The default admin password (`passsword`) is hashed in `database.sql`.
 
 4. **Configure Database Connection:**
 

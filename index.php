@@ -50,13 +50,15 @@ $nav = $_GET['nav'] ?? 'dashboard';
 $error = null;
 $success = null;
 
-// Set the initial theme from session, default to system preference if not set
-if (!isset($_SESSION['theme'])) {
-    $_SESSION['theme'] = 'system'; // Default to system preference
+// Set the initial theme from cookie, default to system preference if not set
+if (!isset($_COOKIE['theme'])) {
+    setcookie('theme', 'system', time() + (365 * 24 * 60 * 60), "/"); // Cookie expires in 1 year
+    $theme = 'system';
+} else {
+    $theme = $_COOKIE['theme'];
 }
 
 // Determine the theme to apply server-side
-$theme = $_SESSION['theme'];
 if ($theme === 'system') {
     // Default to light if we can't determine system preference server-side
     $theme = 'light';
@@ -66,7 +68,7 @@ $twig->addGlobal('theme', $theme);
 // Handle theme toggle as a separate nav value
 if ($nav === 'toggle_theme' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $theme = $_POST['theme'] ?? 'light';
-    $_SESSION['theme'] = $theme;
+    setcookie('theme', $theme, time() + (365 * 24 * 60 * 60), "/"); // Update cookie
     // Return a JSON response for AJAX
     header('Content-Type: application/json');
     echo json_encode(['status' => 'success', 'theme' => $theme]);
@@ -222,7 +224,7 @@ if ($nav === 'login') {
                 $id = $_POST['id'] ?? null;
                 if ($id) {
                     $tag->delete($id);
-                    $success = "Tag deleted successfully.";
+                    $success = "Tag added successfully.";
                 } else {
                     $error = "Tag ID is required.";
                 }

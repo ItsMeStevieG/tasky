@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 20, 2025 at 10:58 AM
+-- Generation Time: Mar 20, 2025 at 11:19 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.3.13
 
@@ -46,15 +46,6 @@ CREATE TABLE `tags` (
   `name` varchar(50) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `tags`
---
-
-INSERT INTO `tags` (`id`, `name`, `created_at`) VALUES
-(1, 'Frontend', '2025-03-19 23:12:19'),
-(2, 'Backend', '2025-03-19 23:12:25'),
-(3, 'Meeting', '2025-03-19 23:12:32');
 
 -- --------------------------------------------------------
 
@@ -146,7 +137,7 @@ ALTER TABLE `projects`
 -- AUTO_INCREMENT for table `tags`
 --
 ALTER TABLE `tags`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `timesheet_entries`

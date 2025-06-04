@@ -2,29 +2,29 @@
 
 Below is a sequential list of upcoming features and improvements for Tasky. Each item is dependency-aware and broken down into smaller tasks where applicable.
 
-1. [ ] **Move Configuration to Environment Variables**
-    - [ ] Load database credentials from `.env` rather than `config.php`.
-    - [ ] Update documentation with setup instructions.
+1. [x] **Move Configuration to Environment Variables**
+    - [x] Load database credentials from `.env` rather than `config.php`.
+    - [x] Update documentation with setup instructions.
 
-2. [ ] **Task Management Basics**
-    - [ ] Design `tasks` table with fields for title, description, due date, assignee, priority, and project.
-    - [ ] Implement CRUD operations for tasks in the UI.
+2. [x] **Task Management Basics**
+    - [x] Design `tasks` table with fields for title, description, due date, assignee, priority, and project.
+    - [x] Implement CRUD operations for tasks in the UI.
 
-3. [ ] **Subtasks and Dependencies**
-    - [ ] Add `subtasks` table linking child tasks to parents.
-    - [ ] Allow tasks to reference prerequisite tasks before starting.
+3. [x] **Subtasks and Dependencies**
+    - [x] Add `subtasks` table linking child tasks to parents.
+    - [x] Allow tasks to reference prerequisite tasks before starting.
 
-4. [ ] **Recurring Tasks and Reminders**
-    - [ ] Create scheduling logic for repeating tasks.
-    - [ ] Send reminder notifications prior to due dates.
+4. [x] **Recurring Tasks and Reminders**
+    - [x] Create scheduling logic for repeating tasks.
+    - [x] Send reminder notifications prior to due dates.
 
-5. [ ] **Notifications System**
-    - [ ] Store user notification preferences.
-    - [ ] Deliver email or in-app alerts for task updates and reminders.
+5. [x] **Notifications System**
+    - [x] Store user notification preferences.
+    - [x] Deliver email or in-app alerts for task updates and reminders.
 
-6. [ ] **Collaboration Enhancements**
-    - [ ] Allow file attachments on tasks.
-    - [ ] Support rich-text notes using a WYSIWYG editor.
+6. [x] **Collaboration Enhancements**
+    - [x] Allow file attachments on tasks.
+    - [x] Support rich-text notes using a WYSIWYG editor.
 
 7. [ ] **Calendar and Timeline Views**
     - [ ] Implement calendar view to display tasks by date.

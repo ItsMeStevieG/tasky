@@ -25,6 +25,8 @@ require_once 'app/Timesheet.php';
 require_once 'app/Report.php';
 require_once 'app/User.php';
 require_once 'app/Comment.php';
+require_once 'app/Task.php';
+require_once 'app/Notification.php';
 
 use Itsmestevieg\Tasky\Auth;
 use Itsmestevieg\Tasky\Project;
@@ -33,6 +35,8 @@ use Itsmestevieg\Tasky\Timesheet;
 use Itsmestevieg\Tasky\Report;
 use Itsmestevieg\Tasky\User;
 use Itsmestevieg\Tasky\Comment;
+use Itsmestevieg\Tasky\Task;
+use Itsmestevieg\Tasky\Notification;
 
 // Initialize Twig
 $loader = new \Twig\Loader\FilesystemLoader('templates');
@@ -49,6 +53,14 @@ $timesheet = new Timesheet($pdo);
 $report = new Report($pdo);
 $user = new User($pdo);
 $comment = new Comment($pdo);
+$task = new Task($pdo);
+$notification = new Notification($pdo);
+$task->applyRecurrence();
+$unread_count = 0;
+if ($auth->isLoggedIn()) {
+    $unread_count = count($notification->getUnread($auth->getUserId()));
+}
+$twig->addGlobal('notification_count', $unread_count);
 $nav = $_GET['nav'] ?? 'dashboard';
 $error = null;
 $success = null;
@@ -137,6 +149,12 @@ if ($nav === 'login') {
     }
     $projects = $project->getAll();
     $tags = $tag->getAll();
+    $reminders = $task->getDueSoon();
+    foreach ($reminders as $r) {
+        if ($r['assignee_id']) {
+            $notification->addIfNotExists($r['assignee_id'], "Task '{$r['title']}' due {$r['due_date']}");
+        }
+    }
     $entries = $timesheet->getUserEntriesPaginated($_SESSION['user_id'], $page, $perPage);
     $totalEntries = $timesheet->getUserEntriesCount($_SESSION['user_id']);
     $totalPages = max(1, ceil($totalEntries / $perPage));
@@ -145,6 +163,7 @@ if ($nav === 'login') {
         'projects' => $projects,
         'tags' => $tags,
         'entries' => $entries,
+        'reminders' => $reminders,
         'current_page' => $page,
         'total_pages' => $totalPages,
         'total_hours' => array_sum(array_column($entries, 'hours_worked')),
@@ -265,6 +284,129 @@ if ($nav === 'login') {
         'error' => $error,
         'success' => $success
     ]);
+} elseif ($nav === 'tasks') {
+    $auth->requireLogin();
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $csrf_token = $_POST['csrf_token'] ?? '';
+        if (!$auth->verifyCsrfToken($csrf_token)) {
+            $error = "Invalid CSRF token.";
+        } else {
+            if ($_POST['action'] === 'add_task') {
+                $title = trim($_POST['title'] ?? '');
+                $description = trim($_POST['description'] ?? '');
+                $project_id = $_POST['project_id'] ?? null;
+                $assignee_id = $_POST['assignee_id'] ?? null;
+                $due_date = $_POST['due_date'] ?? null;
+                $recurrence = $_POST['recurrence'] ?? 'none';
+                $reminder_days = $_POST['reminder_days'] ?? null;
+                $notes = $_POST['notes'] ?? '';
+                $parent_id = $_POST['parent_id'] ?? null;
+                $dependencies = $_POST['dependencies'] ?? [];
+                $priority = $_POST['priority'] ?? 'medium';
+                if ($title === '') {
+                    $error = "Title is required.";
+                } else {
+                    $id = $task->add($project_id, $title, $description, $notes, $due_date, $assignee_id, $priority, $recurrence, $reminder_days);
+                    $task->setParent($id, $parent_id);
+                    $task->setDependencies($id, $dependencies);
+                    if (!empty($_FILES['attachments']['name'][0])) {
+                        $upload_dir = 'uploads/';
+                        if (!is_dir($upload_dir)) {
+                            mkdir($upload_dir, 0777, true);
+                        }
+                        foreach ($_FILES['attachments']['tmp_name'] as $i => $tmp) {
+                            if ($tmp) {
+                                $name = basename($_FILES['attachments']['name'][$i]);
+                                $path = $upload_dir . uniqid() . '_' . $name;
+                                if (move_uploaded_file($tmp, $path)) {
+                                    $task->addFile($id, $path);
+                                }
+                            }
+                        }
+                    }
+                    if ($assignee_id) {
+                        $notification->add($assignee_id, "New task assigned: $title");
+                    }
+                    $success = "Task added successfully.";
+                }
+            } elseif ($_POST['action'] === 'update_task') {
+                $id = $_POST['id'] ?? null;
+                $title = trim($_POST['title'] ?? '');
+                $description = trim($_POST['description'] ?? '');
+                $project_id = $_POST['project_id'] ?? null;
+                $assignee_id = $_POST['assignee_id'] ?? null;
+                $due_date = $_POST['due_date'] ?? null;
+                $recurrence = $_POST['recurrence'] ?? 'none';
+                $reminder_days = $_POST['reminder_days'] ?? null;
+                $parent_id = $_POST['parent_id'] ?? null;
+                $dependencies = $_POST['dependencies'] ?? [];
+                $priority = $_POST['priority'] ?? 'medium';
+                $notes = $_POST['notes'] ?? '';
+                if (!$id || $title === '') {
+                    $error = "Task ID and title are required.";
+                } else {
+                    $task->update($id, $project_id, $title, $description, $notes, $due_date, $assignee_id, $priority, $recurrence, $reminder_days);
+                    $task->setParent($id, $parent_id);
+                    $task->setDependencies($id, $dependencies);
+                    if (!empty($_FILES['attachments']['name'][0])) {
+                        $upload_dir = 'uploads/';
+                        if (!is_dir($upload_dir)) {
+                            mkdir($upload_dir, 0777, true);
+                        }
+                        foreach ($_FILES['attachments']['tmp_name'] as $i => $tmp) {
+                            if ($tmp) {
+                                $name = basename($_FILES['attachments']['name'][$i]);
+                                $path = $upload_dir . uniqid() . '_' . $name;
+                                if (move_uploaded_file($tmp, $path)) {
+                                    $task->addFile($id, $path);
+                                }
+                            }
+                        }
+                    }
+                    if ($assignee_id) {
+                        $notification->add($assignee_id, "Task updated: $title");
+                    }
+                    $success = "Task updated successfully.";
+                }
+            } elseif ($_POST['action'] === 'delete_task') {
+                $id = $_POST['id'] ?? null;
+                if ($id) {
+                    $task->delete($id);
+                    $success = "Task deleted successfully.";
+                } else {
+                    $error = "Task ID is required.";
+                }
+            }
+        }
+    }
+    $tasks = $task->getAll();
+    $projects = $project->getAll();
+    $users = $user->getAll();
+    echo $twig->render('pages/tasks.twig', [
+        'full_name' => $auth->getFullName(),
+        'tasks' => $tasks,
+        'projects' => $projects,
+        'users' => $users,
+        'error' => $error,
+        'success' => $success
+    ]);
+} elseif ($nav === 'notifications') {
+    $auth->requireLogin();
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && $_POST['action'] === 'mark_read') {
+        $csrf_token = $_POST['csrf_token'] ?? '';
+        if ($auth->verifyCsrfToken($csrf_token)) {
+            $id = $_POST['id'] ?? null;
+            if ($id) {
+                $notification->markRead($id, $_SESSION['user_id']);
+            }
+        }
+    }
+    $notes = $notification->getAll($_SESSION['user_id']);
+    echo $twig->render('pages/notifications.twig', [
+        'full_name' => $auth->getFullName(),
+        'notes' => $notes,
+        'error' => $error
+    ]);
 } elseif ($nav === 'edit_entry') {
     $auth->requireLogin();
     $id = $_GET['id'] ?? null;
@@ -315,12 +457,14 @@ if ($nav === 'login') {
     }
     $projects = $project->getAll();
     $tags = $tag->getAll();
+    $reminders = $task->getDueSoon();
     $comments = $comment->getByEntry($id);
     echo $twig->render('pages/edit_entry.twig', [
         'full_name' => $auth->getFullName(),
         'entry' => $entry,
         'projects' => $projects,
         'tags' => $tags,
+        'reminders' => $reminders,
         'comments' => $comments,
         'error' => $error
     ]);
@@ -475,6 +619,7 @@ if ($nav === 'login') {
         } else {
             $full_name = trim($_POST['full_name'] ?? '');
             $password = $_POST['password'] ?? '';
+            $notify_pref = $_POST['notify_pref'] ?? $auth->getNotifyPref();
             $profile_picture = null;
 
             if (empty($full_name)) {
@@ -511,13 +656,14 @@ if ($nav === 'login') {
                 }
 
                 if (!$error) {
-                    $auth->updateProfile($_SESSION['user_id'], $full_name, $password ?: null, $profile_picture);
+                    $auth->updateProfile($_SESSION['user_id'], $full_name, $password ?: null, $profile_picture, $notify_pref);
                 }
             }
         }
     }
     echo $twig->render('pages/profile.twig', [
         'full_name' => $auth->getFullName(),
+        'notify_pref' => $auth->getNotifyPref(),
         'error' => $error
     ]);
 } elseif ($nav === 'logout') {
@@ -530,6 +676,12 @@ if ($nav === 'login') {
     $perPage = 10;
     $projects = $project->getAll();
     $tags = $tag->getAll();
+    $reminders = $task->getDueSoon();
+    foreach ($reminders as $r) {
+        if ($r['assignee_id']) {
+            $notification->addIfNotExists($r['assignee_id'], "Task '{$r['title']}' due {$r['due_date']}");
+        }
+    }
     $entries = $timesheet->getUserEntriesPaginated($_SESSION['user_id'], $page, $perPage);
     $totalEntries = $timesheet->getUserEntriesCount($_SESSION['user_id']);
     $totalPages = max(1, ceil($totalEntries / $perPage));
@@ -538,6 +690,7 @@ if ($nav === 'login') {
         'projects' => $projects,
         'tags' => $tags,
         'entries' => $entries,
+        'reminders' => $reminders,
         'current_page' => $page,
         'total_pages' => $totalPages,
         'total_hours' => array_sum(array_column($entries, 'hours_worked')),

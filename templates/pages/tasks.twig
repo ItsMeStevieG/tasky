@@ -1,0 +1,269 @@
+{% extends 'base.twig' %}
+
+{% block title %}Tasks - Tasky{% endblock %}
+
+{% block content %}
+<div class="card mb-4">
+    <div class="card-header">Add Task</div>
+    <div class="card-body">
+        <form method="POST" action="index.php?nav=tasks" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ auth.getCsrfToken() }}">
+            <input type="hidden" name="action" value="add_task">
+            <div class="mb-3">
+                <label for="title" class="form-label">Title</label>
+                <input type="text" class="form-control" id="title" name="title" required>
+            </div>
+            <div class="mb-3">
+                <label for="description" class="form-label">Description</label>
+                <textarea class="form-control" id="description" name="description"></textarea>
+            </div>
+            <div class="mb-3">
+                <label for="notes" class="form-label">Notes</label>
+                <textarea class="form-control" id="notes" name="notes"></textarea>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Attachments</label>
+                <input type="file" class="form-control" name="attachments[]" multiple>
+            </div>
+            <div class="mb-3">
+                <label for="project_id" class="form-label">Project</label>
+                <select class="form-select" id="project_id" name="project_id">
+                    <option value="">None</option>
+                    {% for project in projects %}
+                    <option value="{{ project.id }}">{{ project.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="assignee_id" class="form-label">Assignee</label>
+                <select class="form-select" id="assignee_id" name="assignee_id">
+                    <option value="">Unassigned</option>
+                    {% for u in users %}
+                    <option value="{{ u.id }}">{{ u.full_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="parent_id" class="form-label">Parent Task</label>
+                <select class="form-select" id="parent_id" name="parent_id">
+                    <option value="">None</option>
+                    {% for t in tasks %}
+                    <option value="{{ t.id }}">{{ t.title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="dependencies" class="form-label">Prerequisites</label>
+                <select class="form-select" id="dependencies" name="dependencies[]" multiple>
+                    {% for t in tasks %}
+                    <option value="{{ t.id }}">{{ t.title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="due_date" class="form-label">Due Date</label>
+                <input type="date" class="form-control" id="due_date" name="due_date">
+            </div>
+            <div class="mb-3">
+                <label for="recurrence" class="form-label">Recurrence</label>
+                <select class="form-select" id="recurrence" name="recurrence">
+                    <option value="none" selected>None</option>
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="reminder_days" class="form-label">Reminder Days Before Due</label>
+                <input type="number" class="form-control" id="reminder_days" name="reminder_days" min="0">
+            </div>
+            <div class="mb-3">
+                <label for="priority" class="form-label">Priority</label>
+                <select class="form-select" id="priority" name="priority">
+                    <option value="low">Low</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="high">High</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Add Task</button>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">Task List</div>
+    <div class="card-body">
+        {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+        {% if success %}<div class="alert alert-success">{{ success }}</div>{% endif %}
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Project</th>
+                        <th>Assignee</th>
+                        <th>Parent</th>
+                        <th>Prerequisites</th>
+                        <th>Due</th>
+                        <th>Recurrence</th>
+                        <th>Reminder</th>
+                        <th>Priority</th>
+                        <th>Files</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in tasks %}
+                    <tr>
+                        <td>{{ t.title }}</td>
+                        <td>{{ t.project_name|default('') }}</td>
+                        <td>{{ t.assignee_name|default('') }}</td>
+                        <td>{{ t.parent_title|default('') }}</td>
+                        <td>{{ t.dependencies|join(', ') }}</td>
+                        <td>{{ t.due_date|default('') }}</td>
+                        <td>{{ t.recurrence }}</td>
+                        <td>{{ t.reminder_days|default('') }}</td>
+                        <td>{{ t.priority }}</td>
+                        <td>
+                            {% for f in t.files %}
+                            <a href="{{ f }}" target="_blank">File</a>{% if not loop.last %}, {% endif %}
+                            {% endfor %}
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-warning edit-task-btn" data-bs-toggle="modal" data-bs-target="#editTaskModal" data-id="{{ t.id }}" data-title="{{ t.title }}" data-description="{{ t.description }}" data-notes="{{ t.notes }}" data-project="{{ t.project_id }}" data-assignee="{{ t.assignee_id }}" data-parent="{{ t.parent_id|default('') }}" data-dependencies="{{ t.dependencies|join(',') }}" data-due="{{ t.due_date }}" data-recurrence="{{ t.recurrence }}" data-reminder="{{ t.reminder_days }}" data-priority="{{ t.priority }}">Edit</button>
+                            <form method="POST" action="index.php?nav=tasks" style="display:inline;" onsubmit="return confirm('Delete this task?');">
+                                <input type="hidden" name="csrf_token" value="{{ auth.getCsrfToken() }}">
+                                <input type="hidden" name="action" value="delete_task">
+                                <input type="hidden" name="id" value="{{ t.id }}">
+                                <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editTaskModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editTaskModalLabel">Edit Task</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form method="POST" action="index.php?nav=tasks" id="editTaskForm" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ auth.getCsrfToken() }}">
+                    <input type="hidden" name="action" value="update_task">
+                    <input type="hidden" name="id" id="edit_task_id">
+                    <div class="mb-3">
+                        <label for="edit_title" class="form-label">Title</label>
+                        <input type="text" class="form-control" id="edit_title" name="title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_description" class="form-label">Description</label>
+                        <textarea class="form-control" id="edit_description" name="description"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="edit_notes" name="notes"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Attachments</label>
+                        <input type="file" class="form-control" name="attachments[]" multiple>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_project" class="form-label">Project</label>
+                        <select class="form-select" id="edit_project" name="project_id">
+                            <option value="">None</option>
+                            {% for project in projects %}
+                            <option value="{{ project.id }}">{{ project.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_assignee" class="form-label">Assignee</label>
+                        <select class="form-select" id="edit_assignee" name="assignee_id">
+                            <option value="">Unassigned</option>
+                            {% for u in users %}
+                            <option value="{{ u.id }}">{{ u.full_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_parent" class="form-label">Parent Task</label>
+                        <select class="form-select" id="edit_parent" name="parent_id">
+                            <option value="">None</option>
+                            {% for t in tasks %}
+                            <option value="{{ t.id }}">{{ t.title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_dependencies" class="form-label">Prerequisites</label>
+                        <select class="form-select" id="edit_dependencies" name="dependencies[]" multiple>
+                            {% for t in tasks %}
+                            <option value="{{ t.id }}">{{ t.title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_due_date" class="form-label">Due Date</label>
+                        <input type="date" class="form-control" id="edit_due_date" name="due_date">
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_recurrence" class="form-label">Recurrence</label>
+                        <select class="form-select" id="edit_recurrence" name="recurrence">
+                            <option value="none">None</option>
+                            <option value="daily">Daily</option>
+                            <option value="weekly">Weekly</option>
+                            <option value="monthly">Monthly</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_reminder_days" class="form-label">Reminder Days Before Due</label>
+                        <input type="number" class="form-control" id="edit_reminder_days" name="reminder_days" min="0">
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_priority" class="form-label">Priority</label>
+                        <select class="form-select" id="edit_priority" name="priority">
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block footscripts %}
+{{ parent() }}
+<script>
+document.querySelectorAll('.edit-task-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.getElementById('edit_task_id').value = btn.getAttribute('data-id');
+        document.getElementById('edit_title').value = btn.getAttribute('data-title');
+        document.getElementById('edit_description').value = btn.getAttribute('data-description');
+        document.getElementById('edit_notes').value = btn.getAttribute('data-notes');
+        document.getElementById('edit_project').value = btn.getAttribute('data-project');
+        document.getElementById('edit_assignee').value = btn.getAttribute('data-assignee');
+        document.getElementById('edit_parent').value = btn.getAttribute('data-parent');
+        const deps = btn.getAttribute('data-dependencies') || '';
+        const depSelect = document.getElementById('edit_dependencies');
+        Array.from(depSelect.options).forEach(o => {
+            o.selected = deps.split(',').includes(o.value);
+        });
+        document.getElementById('edit_due_date').value = btn.getAttribute('data-due');
+        document.getElementById('edit_recurrence').value = btn.getAttribute('data-recurrence');
+        document.getElementById('edit_reminder_days').value = btn.getAttribute('data-reminder');
+        document.getElementById('edit_priority').value = btn.getAttribute('data-priority');
+    });
+});
+</script>
+{% endblock %}

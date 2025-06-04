@@ -19,6 +19,15 @@
                 <input type="password" class="form-control" id="password" name="password">
             </div>
             <div class="mb-3">
+                <label for="notify_pref" class="form-label">Notification Preference</label>
+                <select class="form-select" id="notify_pref" name="notify_pref">
+                    <option value="none" {% if notify_pref == 'none' %}selected{% endif %}>None</option>
+                    <option value="in-app" {% if notify_pref == 'in-app' %}selected{% endif %}>In App</option>
+                    <option value="email" {% if notify_pref == 'email' %}selected{% endif %}>Email</option>
+                    <option value="both" {% if notify_pref == 'both' %}selected{% endif %}>Both</option>
+                </select>
+            </div>
+            <div class="mb-3">
                 <label for="profile_picture" class="form-label">Profile Picture</label>
                 <input type="file" class="form-control" id="profile_picture" name="profile_picture" accept="image/*">
                 {% if auth.getProfilePicture %}

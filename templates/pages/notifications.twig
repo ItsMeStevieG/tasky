@@ -1,0 +1,30 @@
+{% extends 'base.twig' %}
+
+{% block title %}Notifications - Tasky{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">Notifications</div>
+    <div class="card-body">
+        {% if notes|length %}
+        <ul class="list-group">
+            {% for n in notes %}
+            <li class="list-group-item d-flex justify-content-between align-items-center {% if not n.is_read %}fw-bold{% endif %}">
+                {{ n.message }}
+                {% if not n.is_read %}
+                <form method="POST" action="index.php?nav=notifications" class="ms-3">
+                    <input type="hidden" name="csrf_token" value="{{ auth.getCsrfToken() }}">
+                    <input type="hidden" name="action" value="mark_read">
+                    <input type="hidden" name="id" value="{{ n.id }}">
+                    <button class="btn btn-sm btn-primary">Mark Read</button>
+                </form>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p>No notifications.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

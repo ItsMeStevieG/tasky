@@ -91,6 +91,11 @@ class Auth
         return $_SESSION['profile_picture'] ?? null;
     }
 
+    public function getUserId()
+    {
+        return $_SESSION['user_id'] ?? null;
+    }
+
     public function updateProfile($user_id, $full_name, $password = null, $profile_picture = null)
     {
         $params = ['full_name' => $full_name, 'user_id' => $user_id];

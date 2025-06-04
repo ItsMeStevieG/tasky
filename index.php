@@ -24,6 +24,7 @@ require_once 'app/Tag.php';
 require_once 'app/Timesheet.php';
 require_once 'app/Report.php';
 require_once 'app/User.php';
+require_once 'app/Comment.php';
 
 use Itsmestevieg\Tasky\Auth;
 use Itsmestevieg\Tasky\Project;
@@ -31,6 +32,7 @@ use Itsmestevieg\Tasky\Tag;
 use Itsmestevieg\Tasky\Timesheet;
 use Itsmestevieg\Tasky\Report;
 use Itsmestevieg\Tasky\User;
+use Itsmestevieg\Tasky\Comment;
 
 // Initialize Twig
 $loader = new \Twig\Loader\FilesystemLoader('templates');
@@ -46,6 +48,7 @@ $tag = new Tag($pdo);
 $timesheet = new Timesheet($pdo);
 $report = new Report($pdo);
 $user = new User($pdo);
+$comment = new Comment($pdo);
 $nav = $_GET['nav'] ?? 'dashboard';
 $error = null;
 $success = null;
@@ -279,14 +282,26 @@ if ($nav === 'login') {
                 exit;
             }
         }
+    } elseif ($_SERVER['REQUEST_METHOD'] === 'POST' && $_POST['action'] === 'add_comment') {
+        $csrf_token = $_POST['csrf_token'] ?? '';
+        if ($auth->verifyCsrfToken($csrf_token)) {
+            $comment_text = trim($_POST['comment'] ?? '');
+            if ($comment_text !== '') {
+                $comment->add($id, $_SESSION['user_id'], $comment_text);
+            }
+        }
+        header("Location: index.php?nav=edit_entry&id=$id");
+        exit;
     }
     $projects = $project->getAll();
     $tags = $tag->getAll();
+    $comments = $comment->getByEntry($id);
     echo $twig->render('pages/edit_entry.twig', [
         'full_name' => $auth->getFullName(),
         'entry' => $entry,
         'projects' => $projects,
         'tags' => $tags,
+        'comments' => $comments,
         'error' => $error
     ]);
 } elseif ($nav === 'delete_entry') {
@@ -296,6 +311,15 @@ if ($nav === 'login') {
         $timesheet->delete($id, $_SESSION['user_id']);
     }
     header("Location: index.php?nav=dashboard");
+    exit;
+} elseif ($nav === 'delete_comment') {
+    $auth->requireLogin();
+    $id = $_GET['id'] ?? null; // comment id
+    $entry_id = $_GET['entry'] ?? null;
+    if ($id && $entry_id) {
+        $comment->delete($id, $_SESSION['user_id']);
+    }
+    header("Location: index.php?nav=edit_entry&id=" . urlencode($entry_id));
     exit;
 } elseif ($nav === 'reports') {
     $auth->requireLogin();

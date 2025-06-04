@@ -32,6 +32,8 @@
 
 For a concise reference of these features, see [docs/FEATURES.md](docs/FEATURES.md).
 
+For a concise reference of these features, see [docs/FEATURES.md](docs/FEATURES.md).
+
 ## Screenshots
 
 ### Login Page with Theme Toggle

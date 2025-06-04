@@ -11,14 +11,14 @@ class Timesheet
         $this->pdo = $pdo;
     }
 
-    public function add($user_id, $project_id, $tag_id, $date, $start_time, $end_time, $description = '', $is_billable = false)
+    public function add($user_id, $project_id, $tag_id, $date, $start_time, $end_time, $description = '', $is_billable = false, $status = 'todo')
     {
         $start = new \DateTime("$date $start_time");
         $end = new \DateTime("$date $end_time");
         $interval = $start->diff($end);
         $hours_worked = $interval->h + ($interval->i / 60) + ($interval->s / 3600);
 
-        $stmt = $this->pdo->prepare("INSERT INTO timesheet_entries (user_id, project_id, tag_id, date, start_time, end_time, hours_worked, description, is_billable) VALUES (:user_id, :project_id, :tag_id, :date, :start_time, :end_time, :hours_worked, :description, :is_billable)");
+        $stmt = $this->pdo->prepare("INSERT INTO timesheet_entries (user_id, project_id, tag_id, date, start_time, end_time, hours_worked, description, is_billable, status) VALUES (:user_id, :project_id, :tag_id, :date, :start_time, :end_time, :hours_worked, :description, :is_billable, :status)");
         $stmt->execute([
             'user_id' => $user_id,
             'project_id' => $project_id,
@@ -28,7 +28,8 @@ class Timesheet
             'end_time' => $end_time,
             'hours_worked' => $hours_worked,
             'description' => $description,
-            'is_billable' => $is_billable ? 1 : 0
+            'is_billable' => $is_billable ? 1 : 0,
+            'status' => $status
         ]);
         return $this->pdo->lastInsertId();
     }
@@ -86,7 +87,7 @@ class Timesheet
         return $stmt->fetch(\PDO::FETCH_ASSOC);
     }
 
-    public function update($id, $user_id, $project_id, $tag_id, $date, $start_time, $end_time, $description = '', $is_billable = false)
+    public function update($id, $user_id, $project_id, $tag_id, $date, $start_time, $end_time, $description = '', $is_billable = false, $status = 'todo')
     {
         $start = new \DateTime("$date $start_time");
         $end = new \DateTime("$date $end_time");
@@ -95,7 +96,7 @@ class Timesheet
 
         $stmt = $this->pdo->prepare("
             UPDATE timesheet_entries
-            SET project_id = :project_id, tag_id = :tag_id, date = :date, start_time = :start_time, end_time = :end_time, hours_worked = :hours_worked, description = :description, is_billable = :is_billable
+            SET project_id = :project_id, tag_id = :tag_id, date = :date, start_time = :start_time, end_time = :end_time, hours_worked = :hours_worked, description = :description, is_billable = :is_billable, status = :status
             WHERE id = :id AND user_id = :user_id
         ");
         $stmt->execute([
@@ -107,6 +108,7 @@ class Timesheet
             'hours_worked' => $hours_worked,
             'description' => $description,
             'is_billable' => $is_billable ? 1 : 0,
+            'status' => $status,
             'id' => $id,
             'user_id' => $user_id
         ]);
@@ -116,5 +118,27 @@ class Timesheet
     {
         $stmt = $this->pdo->prepare("DELETE FROM timesheet_entries WHERE id = :id AND user_id = :user_id");
         $stmt->execute(['id' => $id, 'user_id' => $user_id]);
+    }
+
+    public function updateStatus($id, $user_id, $status)
+    {
+        $stmt = $this->pdo->prepare("UPDATE timesheet_entries SET status = :status WHERE id = :id AND user_id = :user_id");
+        $stmt->execute(['status' => $status, 'id' => $id, 'user_id' => $user_id]);
+    }
+
+    public function getEntriesByStatus($user_id)
+    {
+        $stmt = $this->pdo->prepare("SELECT te.*, p.name AS project_name, t.name AS tag_name FROM timesheet_entries te LEFT JOIN projects p ON te.project_id = p.id LEFT JOIN tags t ON te.tag_id = t.id WHERE te.user_id = :user_id ORDER BY te.created_at DESC");
+        $stmt->execute(['user_id' => $user_id]);
+        $entries = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        $grouped = ['todo' => [], 'in_progress' => [], 'done' => []];
+        foreach ($entries as $entry) {
+            $status = $entry['status'] ?? 'todo';
+            if (!isset($grouped[$status])) {
+                $grouped[$status] = [];
+            }
+            $grouped[$status][] = $entry;
+        }
+        return $grouped;
     }
 }

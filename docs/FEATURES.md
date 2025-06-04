@@ -8,6 +8,7 @@ Tasky is a lightweight PHP-based time tracking application. Below is a summary o
 - **Projects and Tags**: Create projects with client names and categorize entries with tags.
 - **CRUD Operations**: Create, read, update, and delete timesheet entries.
 - **Comments**: Discussion threads on each entry for team collaboration.
+- **Board View**: Simple Kanban board for moving entries through Todo, In Progress, and Done.
 
 ## Reporting and Exports
 - Generate reports showing total hours by project with date range filters.

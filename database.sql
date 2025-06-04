@@ -78,6 +78,7 @@ CREATE TABLE `timesheet_entries` (
   `hours_worked` decimal(5,2) DEFAULT NULL,
   `description` text DEFAULT NULL,
   `is_billable` tinyint(1) DEFAULT 0,
+  `status` varchar(20) NOT NULL DEFAULT 'todo',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 

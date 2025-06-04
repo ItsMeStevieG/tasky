@@ -22,6 +22,11 @@
 - **Time Tracking**: Start/stop timer to log work hours, with manual entry support.
 - **Project Management**: Add and list projects with client details.
 - **Tag Management**: Categorize entries with custom tags.
+- **Task Management**: Create tasks with assignees, due dates, and priority.
+- **Subtasks and Dependencies**: Link tasks hierarchically and define prerequisites.
+- **Recurring Tasks and Reminders**: Schedule repeating tasks and get due-date alerts.
+- **Notifications**: Receive in-app alerts for upcoming tasks and updates.
+- **File Attachments and Rich-Text Notes**: Upload files to tasks and add formatted notes.
 - **CRUD Operations**: Create, read, update, and delete timesheet entries.
 - **Comments**: Discuss work with comment threads on each timesheet entry.
 - **Board View**: Visualize entries on a simple Kanban board with status updates.
@@ -29,8 +34,6 @@
 - **Theme Support**: Toggle between light and dark modes (available on login page and all authenticated pages) with persistent user preference.
 - **Responsive Design**: Built with Bootstrap 5.3.3 for a mobile-friendly UI.
 - **Error Logging**: Custom error handler logs to `logs/php_errors.log` for debugging.
-
-For a concise reference of these features, see [docs/FEATURES.md](docs/FEATURES.md).
 
 For a concise reference of these features, see [docs/FEATURES.md](docs/FEATURES.md).
 
@@ -88,15 +91,10 @@ For a concise reference of these features, see [docs/FEATURES.md](docs/FEATURES.
 
 4. **Configure Database Connection:**
 
-- Update `config.php` with your MySQL credentials:
-  ```php
-  <?php
-  try {
-     $pdo = new PDO("mysql:host=localhost;dbname=tasky_db", "root", "");
-     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-  } catch (PDOException $e) {
-     die("Connection failed: " . $e->getMessage());
-  }
+- Copy `.env.example` to `.env` and update the values with your MySQL credentials:
+  ```bash
+  cp .env.example .env
+  # then edit .env with your DB settings
   ```
 
 5. **Set Up File Permissions:**
@@ -172,8 +170,10 @@ tasky/
 │   ├── pages/
 │   │   ├── login.twig
 │   │   ├── dashboard.twig
+│   │   ├── board.twig
 │   │   ├── projects.twig
 │   │   ├── tags.twig
+│   │   ├── tasks.twig
 │   │   ├── edit_entry.twig
 │   │   ├── reports.twig
 │   │   ├── users.twig
@@ -185,6 +185,7 @@ tasky/
 ├── vendor/
 ├── composer.json
 ├── composer.lock
+├── .env.example
 ├── config.php
 └── index.php
 ```

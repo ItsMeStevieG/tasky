@@ -38,6 +38,7 @@ class Auth
             $_SESSION['full_name'] = $user['full_name'];
             $_SESSION['is_admin'] = $user['is_admin'];
             $_SESSION['profile_picture'] = $user['profile_picture'];
+            $_SESSION['notify_pref'] = $user['notify_pref'];
             return true;
         }
         return false;
@@ -91,12 +92,17 @@ class Auth
         return $_SESSION['profile_picture'] ?? null;
     }
 
+    public function getNotifyPref()
+    {
+        return $_SESSION['notify_pref'] ?? 'in-app';
+    }
+
     public function getUserId()
     {
         return $_SESSION['user_id'] ?? null;
     }
 
-    public function updateProfile($user_id, $full_name, $password = null, $profile_picture = null)
+    public function updateProfile($user_id, $full_name, $password = null, $profile_picture = null, $notify_pref = null)
     {
         $params = ['full_name' => $full_name, 'user_id' => $user_id];
         $sql = "UPDATE users SET full_name = :full_name";
@@ -108,6 +114,11 @@ class Auth
         if ($profile_picture) {
             $params['profile_picture'] = $profile_picture;
             $sql .= ", profile_picture = :profile_picture";
+        }
+        if ($notify_pref !== null) {
+            $params['notify_pref'] = $notify_pref;
+            $sql .= ", notify_pref = :notify_pref";
+            $_SESSION['notify_pref'] = $notify_pref;
         }
 
         $sql .= " WHERE id = :user_id";

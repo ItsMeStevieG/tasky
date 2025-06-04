@@ -36,6 +36,16 @@
                         <a class="nav-link" href="index.php?nav=tags">Tags</a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link" href="index.php?nav=tasks">Tasks</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.php?nav=notifications">Notifications
+                            {% if notification_count > 0 %}
+                            <span class="badge bg-danger">{{ notification_count }}</span>
+                            {% endif %}
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="index.php?nav=reports">Reports</a>
                     </li>
                     {% if auth.isAdmin %}
@@ -78,6 +88,7 @@
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
+    <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
     {% block footscripts %}
     <script>
         // Cropper.js logic (only on profile page)
@@ -143,6 +154,9 @@
                 }
                 imageToCrop.src = '';
             });
+        }
+        if (typeof tinymce !== 'undefined') {
+            tinymce.init({ selector: '#notes, #edit_notes' });
         }
     </script>
     {% endblock %}

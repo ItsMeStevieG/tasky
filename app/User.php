@@ -11,14 +11,15 @@ class User
         $this->pdo = $pdo;
     }
 
-    public function add($username, $password, $full_name, $is_admin = false)
+    public function add($username, $password, $full_name, $is_admin = false, $notify_pref = 'in-app')
     {
-        $stmt = $this->pdo->prepare("INSERT INTO users (username, password, full_name, is_admin) VALUES (:username, :password, :full_name, :is_admin)");
+        $stmt = $this->pdo->prepare("INSERT INTO users (username, password, full_name, is_admin, notify_pref) VALUES (:username, :password, :full_name, :is_admin, :notify_pref)");
         $stmt->execute([
             'username' => $username,
             'password' => password_hash($password, PASSWORD_BCRYPT),
             'full_name' => $full_name,
-            'is_admin' => $is_admin ? 1 : 0
+            'is_admin' => $is_admin ? 1 : 0,
+            'notify_pref' => $notify_pref
         ]);
         return $this->pdo->lastInsertId();
     }
@@ -36,7 +37,14 @@ class User
         return $stmt->fetch(\PDO::FETCH_ASSOC);
     }
 
-    public function update($id, $username, $full_name, $is_admin, $password = null)
+    public function getNotifyPref($id)
+    {
+        $stmt = $this->pdo->prepare("SELECT notify_pref FROM users WHERE id = :id");
+        $stmt->execute(['id' => $id]);
+        return $stmt->fetchColumn();
+    }
+
+    public function update($id, $username, $full_name, $is_admin, $password = null, $notify_pref = null)
     {
         $params = ['id' => $id, 'username' => $username, 'full_name' => $full_name, 'is_admin' => $is_admin ? 1 : 0];
         $sql = "UPDATE users SET username = :username, full_name = :full_name, is_admin = :is_admin";
@@ -44,6 +52,10 @@ class User
         if ($password) {
             $params['password'] = password_hash($password, PASSWORD_BCRYPT);
             $sql .= ", password = :password";
+        }
+        if ($notify_pref !== null) {
+            $params['notify_pref'] = $notify_pref;
+            $sql .= ", notify_pref = :notify_pref";
         }
 
         $sql .= " WHERE id = :id";

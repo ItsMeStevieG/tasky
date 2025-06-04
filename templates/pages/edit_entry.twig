@@ -53,6 +53,28 @@
             </div>
             <button type="submit" class="btn btn-primary">Update Entry</button>
         </form>
+        <hr>
+        <h5>Comments</h5>
+        <form method="POST" action="index.php?nav=edit_entry&id={{ entry.id }}" class="mb-3">
+            <input type="hidden" name="csrf_token" value="{{ auth.getCsrfToken() }}">
+            <input type="hidden" name="action" value="add_comment">
+            <div class="input-group">
+                <input type="text" class="form-control" name="comment" placeholder="Add a comment" required>
+                <button class="btn btn-secondary" type="submit">Add</button>
+            </div>
+        </form>
+        {% for c in comments %}
+        <div class="mb-2">
+            <strong>{{ c.full_name }}</strong>
+            <span class="text-muted">{{ c.created_at }}</span>
+            <p class="mb-0">{{ c.comment }}</p>
+            {% if c.user_id == auth.getUserId() %}
+            <a href="index.php?nav=delete_comment&id={{ c.id }}&entry={{ entry.id }}" class="text-danger small" onclick="return confirm('Delete comment?')">Delete</a>
+            {% endif %}
+        </div>
+        {% else %}
+        <p>No comments yet.</p>
+        {% endfor %}
     </div>
 </div>
 {% endblock %}

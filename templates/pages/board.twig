@@ -1,0 +1,38 @@
+{% extends 'base.twig' %}
+
+{% block title %}Board - Tasky{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Board</h1>
+<div class="row">
+    {% for status in ['todo','in_progress','done'] %}
+    <div class="col-md-4 mb-3">
+        <div class="card">
+            <div class="card-header text-center text-capitalize">{{ status|replace({'_':' '}) }}</div>
+            <div class="card-body" style="min-height: 150px;">
+                {% if board[status] is not empty %}
+                {% for entry in board[status] %}
+                <div class="mb-2 p-2 border rounded bg-light">
+                    <p class="mb-1"><strong>{{ entry.project_name|default('') }}</strong></p>
+                    <p class="mb-1">{{ entry.description }}</p>
+                    <form method="POST" action="index.php?nav=board">
+                        <input type="hidden" name="csrf_token" value="{{ auth.getCsrfToken() }}">
+                        <input type="hidden" name="action" value="update_status">
+                        <input type="hidden" name="entry_id" value="{{ entry.id }}">
+                        <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <option value="todo" {% if entry.status=='todo' %}selected{% endif %}>To Do</option>
+                            <option value="in_progress" {% if entry.status=='in_progress' %}selected{% endif %}>In Progress</option>
+                            <option value="done" {% if entry.status=='done' %}selected{% endif %}>Done</option>
+                        </select>
+                    </form>
+                </div>
+                {% endfor %}
+                {% else %}
+                <p class="text-muted">No entries</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

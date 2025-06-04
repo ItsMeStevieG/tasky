@@ -151,6 +151,26 @@ if ($nav === 'login') {
         'error' => $error,
         'success' => $success
     ]);
+} elseif ($nav === 'board') {
+    $auth->requireLogin();
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && $_POST['action'] === 'update_status') {
+        $csrf_token = $_POST['csrf_token'] ?? '';
+        if ($auth->verifyCsrfToken($csrf_token)) {
+            $entry_id = $_POST['entry_id'] ?? null;
+            $status = $_POST['status'] ?? 'todo';
+            if ($entry_id) {
+                $timesheet->updateStatus($entry_id, $_SESSION['user_id'], $status);
+            }
+        } else {
+            $error = 'Invalid CSRF token.';
+        }
+    }
+    $board = $timesheet->getEntriesByStatus($_SESSION['user_id']);
+    echo $twig->render('pages/board.twig', [
+        'full_name' => $auth->getFullName(),
+        'board' => $board,
+        'error' => $error
+    ]);
 } elseif ($nav === 'projects') {
     $auth->requireLogin();
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {

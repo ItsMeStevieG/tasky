@@ -24,6 +24,7 @@
 - **Tag Management**: Categorize entries with custom tags.
 - **CRUD Operations**: Create, read, update, and delete timesheet entries.
 - **Comments**: Discuss work with comment threads on each timesheet entry.
+- **Board View**: Visualize entries on a simple Kanban board with status updates.
 - **Reporting**: Generate reports of total hours by project with date range filtering.
 - **Theme Support**: Toggle between light and dark modes (available on login page and all authenticated pages) with persistent user preference.
 - **Responsive Design**: Built with Bootstrap 5.3.3 for a mobile-friendly UI.
